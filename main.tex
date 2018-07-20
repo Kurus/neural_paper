@@ -6,9 +6,18 @@
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
+\usepackage[export]{adjustbox}
+\ifCLASSOPTIONcompsoc
+    \usepackage[caption=false, font=normalsize, labelfont=sf, textfont=sf]{subfig}
+\else
+\usepackage[caption=false, font=footnotesize]{subfig}
+\fi
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
+
+
 
 \title{EdgeNet: SqueezeNet like Convolution Neural Network on Embedded FPGA\\
 %{\footnotesize \textsuperscript{*}Note: Sub-titles are not captured in Xplore and
@@ -122,11 +131,26 @@ Computation block is the key feature in our design. It is a collection of layers
 
 \subsection{Architecture}
 \subsubsection{System architecture}
-Fig. ?? shows the overall architecture of our design. the host processor("ARM cortex 9") can access the memory through SDRAM controller. It will write all model parameters and input data in a shared memory space. Final output can be read from the shared memory space. There is an AXI bus between host and FPGA("config") to transfer configuration parameter, address spaces of data location from the host processor to FPGA. There is an interrupt signal from FPGA to denote the completed task. In hardware side, we have two AXI master connected to "input layer" block and "output layer" block, one is to read model parameters and another one is to read, write input and output feature map. "config" module set the configuration register of all other modules, such that each module know how to operate. It sends the addresses to "input layer" and "kernel controller" block, which denotes the location of data. "input layer" module read the input data from DDR memory and "kernel controller" module read the weights, bias. once "computation block" received configuration it knows which layers to enable, input dimension, number of kernels operation need to be done etc. then it sends the data to "output layer" module. Output layer writes the result in DDR memory in the allocated location. When execution of the whole iteration of computation block finishes, "output layer" send an interrupt to the host processor.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.4\textwidth]{archiecture.jpg}}
+\caption{System architecture}
+\label{arch}
+\end{figure}
+
+``Fig.~\ref{arch}`` shows the overall architecture of our design. the host processor("ARM cortex 9") can access the memory through SDRAM controller. It will write all model parameters and input data in a shared memory space. Final output can be read from the shared memory space. There is an AXI bus between host and FPGA("config") to transfer configuration parameter, address spaces of data location from the host processor to FPGA. There is an interrupt signal from FPGA to denote the completed task. In hardware side, we have two AXI master connected to "input layer" block and "output layer" block, one is to read model parameters and another one is to read, write input and output feature map. "config" module set the configuration register of all other modules, such that each module know how to operate. It sends the addresses to "input layer" and "kernel controller" block, which denotes the location of data. "input layer" module read the input data from DDR memory and "kernel controller" module read the weights, bias. once "computation block" received configuration it knows which layers to enable, input dimension, number of kernels operation need to be done etc. then it sends the data to "output layer" module. Output layer writes the result in DDR memory in the allocated location. When execution of the whole iteration of computation block finishes, "output layer" send an interrupt to the host processor.
 
 
 \subsubsection{computation block}
-Figure ?? shows the architecture of the computation block and its interface with other blocks. A computation block consists of four different layers, including the two expand convolution (3x3 and 1x1), max pool layer, one squeeze layer (1x1 convolution) and an average pool layer. Expand layer has 4 parallel pipelines followed by an adder tree and RELU activation. We can enable max pool or average pool function by configuring computation block accordingly.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.4\textwidth]{computation.jpg}}
+\caption{computation block architecture}
+\label{cmp}
+\end{figure}
+
+
+``Fig.~\ref{cmp}'' shows the architecture of the computation block and its interface with other blocks. A computation block consists of four different layers, including the two expand convolution (3x3 and 1x1), max pool layer, one squeeze layer (1x1 convolution) and an average pool layer. Expand layer has 4 parallel pipelines followed by an adder tree and RELU activation. We can enable max pool or average pool function by configuring computation block accordingly.
 
 
 \subsection{Implementation}
@@ -143,6 +167,21 @@ Experiments were conducted in DE 10 Nano board. We have used trained weights fro
 Figure ?? show the measured performance of three different cases. 
 
 Table??? Show the memory usage in each iteration of the computation block. Calculated average bandwidth for our architecture is around 142MB/s. It also shows that the final convolution layer which performs the classification requires the highest bandwidth
+
+
+
+\begin{figure} 
+    \centering
+  \subfloat[]{%
+       \includegraphics[width=0.28\linewidth,valign=c]{image.jpg}}
+    \label{1a}
+  \subfloat[]{%
+        \includegraphics[width=0.7\linewidth,valign=c]{graph1.jpg}}
+    \label{1b}
+  \caption{(a) sample image (b) class score from our design and 32-bit implementation}
+  \label{fig1} 
+\end{figure}
+
 
 Figure ?? show the final value for a sample image from 32 bit (TensorFlow) and from our design. We can see quantization error due to custom float representation. Still, the classification is correct. 
 
