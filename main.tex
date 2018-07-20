@@ -34,7 +34,7 @@ rnatheesan@gmail.com}
 \maketitle
 
 \begin{abstract}
-In recent years, Convolution Neural Network (CNN) gained great success in many application specially in computer vision. Now adapting CNN inference on edge device have became the active research in embedded vision and hot topic in Edge AI. The major design hurdles for implementing CNN inference on embedded systems are limited computation resource, memory resource and power budget. In this study we are presenting a novel architecture for SqueezeNet like CNN models and this can be extended to support any CNN model as well. We address two approaches to mitigate resource constraints. First, we use custom floating point(12 bit for computation and 8bit for storing). Second is slicing the model into repetitive block called computation blocks. We have implemented SqueezeNet v1.1 for Image-Net for large scale classification which achieved around 9 FPS at 100MHz. Accuracy loss due to using custom float is measured to be less than 2\%. Unlike other implementations which use FPGA boards with large amount of resources, our experiments are done in DE10 Nano, this mimics actual embedded system like environment.
+In recent years, Convolution Neural Network (CNN) gained great success in many application, especially in computer vision. Now adapting CNN inference on edge device has become the active research in embedded vision and hot topic in Edge AI. The major design hurdles for implementing CNN inference on embedded systems are limited computation resource, memory resource, and power budget. In this study, we are presenting a novel architecture for SqueezeNet like CNN models and this can be extended to support any CNN model as well. We address two approaches to mitigate resource constraints. First, we use a custom floating point(12 bit for computation and 8bit for storing). Second is slicing the model into repetitives block called computation blocks. Computation block can be configured dynamically by the host processor to operate in a different mode. We have implemented SqueezeNet v1.1 for Image-Net for large-scale classification which achieved around 9 FPS at 100MHz. Accuracy loss due to using custom float is measured to be less than 2\%. Unlike other implementations which use FPGA boards with a large amount of resources, our experiments are done in DE10 Nano, this mimics actual embedded system like environment.
 
 \end{abstract}
 
@@ -43,37 +43,44 @@ FPGA, SqueezeNet, Convolution Neural Network,  Edge AI,  Embedded FPGA
 \end{IEEEkeywords}
 
 \section{Introduction}
-This document is a model and instructions for \LaTeX.
-Please observe the conference page limits. 
+Image classification is a basic problem in computer vision (CV). CNN models have reached human-like accuracy in image classification. After alexnet[??] won ImageNet challenge CNN became the state of art methodology for image recognition and many other tasks. Now CNN have been used successfully used in object recognition, segmentation, face recognition, pose estimation, style transferring and many more. Not only in vision, CNN is used in natural language processing task like keyword spotting (paper). While achieving state-of-the-art performance, CNN-based methods demand much more computations and memory resources compared with traditional methods. Large servers are used for most CNN training and inference. However, there is an emerging market for running inference on embedded applications, such as autonomous car, drones, robots, intelligent cameras surveillance and monitoring. But limited battery power and computation resources are major problems for embedded systems. Many researchers have proposed various techniques [6, 7, 8, 9, 10, 11, 12, 13]. But most of the studies utilize FPGA with large resources (????? zynqnet) which is often not suitable for the embedded environment. Our study is based on a very small FPGA board which can be scaled and extended to large FPGAs too.
+
+
+In this paper, we analyze the factors which need to be considered when we deploy CNN on embedded FPGA platform. An architecture for CNN is proposed and SqueezeNet for Imagenet large-scale classification is deployed in the architecture. Specifically, this paper makes the following key contributions
+• We present that using low bit floating representation can drastically reduce the resource requirements while sacrifice a little accuracy compare to 32-bit floating representation.
+• We propose a block architecture to accelerate CNN inference on embedded FPGA. It can be configured dynamically to support CNN models. SqueezeNet for ImageNet dataset is tested, which achieved 9fps and around 55\% top-1 accuracy on a DE-10 board at 100MHz while only consuming 2W power.
+
+Rest of the paper is organized as follows. In Section 2 we provide a background on CNN, Squeezenet and review related works. Then, in Sections 3 we describe the design strategies used in our system. Section 4 explains the architecture of the overall system. After that, in section 5 and 6 we turn our attention to implementations and experiments conducted.  Finally, we compare our result and conclude in Section 7 and 8.
 
 \section{Background}
-
 \subsection{Convolution neural Network}
+Convolutional Neural Networks(CNN) usually composed of different basic layers like convolutional layers, pooling layers, fully connected layers, which are cascaded sequentially. The convolution layers have parameters called weights and bias, there are referred to as model parameters. The first layer of a CNN is an input image, perform convolution operation and outputs a feature map. The following layers read this feature map and generate output new feature map. This continues until it reaches final layers which perform classification using probability. Convolution layers which located at front extract very coarse, basic features and in the intermediate layers they extract higher-level features. The fully connected layer, at last, perform scoring for classification. Convolutional layers are computationally demanding and fully connected layers are memory are demanding. 
+
 \subsection{SqueezeNet v1.1}
+SqueezeNet is a state-of-art CNN model which only use 3x3 and 1x1 convolutional kernels. Using 1x1 filters reduced depth hence it reduces the computation of the following 3x3 filters. Though it has 50x fewer parameters, it achieves the same accuracy as AlexNet does for ImageNet which make it suitable for the embedded environment. The distinct feature of SqueezeNet is lack of fully connected layers, SqueezeNet uses an average pooling layer to calculate classification scores. using small convolution kernels and not using fully connected layer have immensely reduced computation and memory demand. This feature makes SqueezeNet best suit for the embedded platform.
 \subsection{Related work}
 
 
 \section{Design Statergy}
-Hardware resources(LUT, register, etc), on-chip memory or BRAM, bandwidth to access external memory and latency of systems are major constraints in embedded system. Typical CNN models used in computer vision task usually demand huge floating point arithmetic operations and large size of storage for parameters which cannot be stored in on-chip memory. So we cannot deploy entire model in hardware at once. At the same time it is not efficient to deploy single layer by layer, because each layer output should be stored and read back from memory and this will drastically degrade performance. We have carefully designed the architecture using two strategies, using custom floating point representation and computation blocks, such that any of the mentioned constraints will not badly affect the overall performance.  We also use techniques like double buffering, prefetching and pipelining to further improve the performance. 
+Hardware resources(ALM, register), on-chip memory or BRAM, bandwidth to access external memory and latency of systems are major constraints in the embedded system. Typical CNN models used in computer vision task usually demand huge floating point arithmetic operations and large size of storage for parameters which cannot be stored in on-chip memory. So we cannot deploy the entire model in hardware at once. At the same time, it is not efficient to deploy single layer by layer because each layer output should be stored and read back from memory and this will drastically degrade performance. We have carefully designed the architecture using two strategies, using custom floating point representation and computation blocks, such that any of the mentioned constraints will not badly affect the overall performance.  We also use techniques like double buffering, prefetching and pipelining to further improve the performance.
 
 \subsection{Strategy I: Custom floating point number
 }\label{AA}
-Most of CNN inference are implemented in 32 bit float numbers. For some application 32 bit precision is too much and we can save resource and power by using low bit with representations. we use two type of floating point representation, 12 bit representation is for computation and 8 bit representation for storing input, parameters and intermediate results. 8 bit representation used 5 bit exponent and 2 bit mantissa and 12 bit uses 5 bit exponent and 6 bit mantissa. This floating point representation is chosen by an empirical study on SqueezeNet model with different format. We only sacrifice 2\% of accuracy which gives top 1 accuracy of 70\% on ImageNet dataset, enough for most of embedded vision applications. We also can easily adapt any floating format according to model’s requirement and resource availability. 
-Using 8 bit for model parameter save 75\% of memory required for model parameters. Using 12 bit operation save ???\% of hardware resources compare to 32 bit operation
+Most of CNN inference is implemented in 32-bit float numbers. For some application 32 bit precision is too much and we can save resource and power by using a low bit with representations. we use two type of floating point representation, 12-bit representation is for computation and 8-bit representation for storing input, parameters and intermediate results. The The The 8-bit representation used 5-bit exponent and 2-bit mantissa and 12-bit use 5-bit exponent and 6-bit mantissa. This floating point representation is chosen by an empirical study on SqueezeNet model with a different format. We only sacrifice 2\% of accuracy which gives top 1 accuracy of 55\% and top-5 accuracy of 78\%. on ImageNet dataset, enough for most of the embedded vision applications. We also can easily adapt any floating format according to the model’s requirement and resource availability. Using 8 bit for model parameter save 75\% of memory required for model parameters. Using 12-bit operation save ???\% of hardware resources compared to 32-bit operation
 
 
 \begin{table}[htbp]
 \caption{Floating point resource comparision}
 \begin{center}
-\begin{tabular}{|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|c|c|}
 \hline
-&\multicolumn{2}{|c|}{\textbf{12 bit}} &\multicolumn{2}{|c|}{\textbf{32 bit}}\\
-\cline{2-5} 
- & \textbf{\textit{ALM}} & \textbf{\textit{Register}}& \textbf{\textit{ALM}}& \textbf{\textit{Register}}\\
+				&\multicolumn{3}{|c|}{\textbf{12 bit}} 											&\multicolumn{3}{|c|}{\textbf{32 bit}}\\
+				\cline{2-7} 
+ 				& \textbf{\textit{ALM}} & \textbf{\textit{Register}} & \textbf{\textit{DSP}}	& \textbf{\textit{ALM}}	& \textbf{\textit{Register}} & \textbf{\textit{DSP}}\\
 \hline
-Addition& 131 & 109 & ??? & ???  \\
+additional 		& 131 					& 109 							& ??? 					& 533					&496						&n/a  \\
 \hline
-Multiplication& 43 & 45 & ??? & ???  \\
+Multiplication	& 43 					& 45 							& ??? 					& 128					&249						&4(18x18)  \\
 \hline
 \end{tabular}
 \label{tab1}
@@ -82,176 +89,70 @@ Multiplication& 43 & 45 & ??? & ???  \\
 
 
 
-\subsubsection{Advantage of using custom floating point
+\subsubsection{Advantages of using custom floating point
 }
-Using 32 bit floating operation are not affordable in embedded systems. Studies [x,y,z] uses alternative representations like fixed point number, dynamic fixed point numbers(papers). When using fixed point intermediate output range may change drastically and designer have to be very careful about saturation values. In dynamic fixed point, its needed to adjust fractional part, which will consume additional resources. When using custom floating point numbers, user no need to worry much about the intermediate results saturation, because floating numbers can represent large range of numbers compare to range of fixed point representation of same size. 
+Using 32-bit floating operation are not affordable in embedded systems. Studies [x,y,z] uses alternative representations like a fixed-point number, dynamic fixed-point numbers(papers). When using fixed point intermediate output range may change drastically and designer has to be very careful about saturation values. In a dynamic fixed point, its needed to adjust the fractional part, which will consume additional resources. When using custom floating point numbers, the user no need to worry much about the intermediate results saturation, because floating numbers can represent a large range of numbers compare to the range of fixed-point representation of the same size. 
 
 
+
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.35\textwidth]{index.jpeg}}
+\caption{SqueezeNet sliced as computation block}
+\label{sqz}
+\end{figure}
 
 
 \subsection{Strategy II: Computation block}
-Computation block is the key feature in our design. It is a collection of layers fused together as single block. It contains expand layers(3x3, 1x1 convolution) followed by maxpool, squeeze layer(1x1 convolution) and finally average pool layer. With all these layers computation block will easily fit into any small FPGA like cyclone V. figure?? Show how squeezenet is sliced into 9 partition which can be executed in our computation block in sequential manner without reprogramming the hardware. Here is the list of main features of computation blocks
+Computation block is the key feature in our design. It is a collection of layers fused together as a single block. It contains expand layers(3x3, 1x1 convolution) followed by a max pool, squeeze layer(1x1 convolution) and finally average pool layer. With all these layers computation block will easily fit into any small FPGA like cyclone V. ``Fig.~\ref{sqz}'' Show how Squeezenet is sliced into 9 partitions which can be executed in our computation block in a sequential manner without reprogramming the hardware. Here is the list of main features of computation blocks
 
 \begin{itemize}
-\item Configurable size: size of input dimension, number of kernels can be configured on fly by setting configuration registers and computation block will operate accordingly. This make computation block can be reused for different size of input and number of kernel within provided range.
+\item Configurable size: size of input dimension, number of kernels can be configured on the fly by setting configuration registers and computation block will operate accordingly. This make computation block can be reused for different size of input and number of the kernel within the provided range.
 
-\item Configurable layers: layers in side computation block can be enabled or disabled through control signal or by API. This make computation blocks to operate in different mode. For example at start of SqueezeNet model, only 3x3 convolution  is enabled and at the end, only 3x3 and average pool are enabled.
+\item Configurable layers: layers inside computation block can be enabled or disabled through control signal or by API. This makes computation blocks to operate in a different mode. For example, at the start of SqueezeNet model, only 3x3 convolution is enabled and at the end, only 3x3 and average pool are enabled.
 
-\item Low memory footprint: computation block won't begin with squeeze layer as in fire module of SqueezeNet. We purposely did this because, after squeeze layer, model shirks to fewer size, so slicing the model after squeeze layer and making it as entry and exit point of the computation block will reduce memory access. And the intermediate results after expand layer, which are larger in size, are processed internally without sending to memory. This cleaver decision have enormously reduced the memory bandwidth demand. 
+\item Low memory footprint: computation block won't begin with squeeze layer as in fire module of SqueezeNet. We purposely did this because, after squeeze layer, model shirks to fewer size, so slicing the model after squeeze layer and making it as entry and exit point of the computation block will reduce memory access. And the intermediate results after expand layer, which is larger in size, are processed internally without sending to memory. This cleaver decision has enormously reduced the memory bandwidth demand. 
 
-\item Cascadable design: computation generate the out as in the same order of the input. This make computation block cascadable. For example in a larger FPGA, we can put two computation block one after another. This will increase the throughput by more than 2 times.
 
-\item Compact size: computation block contains few collection of layers though it is compact in size and can be accomodated small FPGA too. So computation block can be a general solution across different devices.
+\item Cascadable design: computation generate the out as in the same order of the input. This makes computation block cascadable. For example in a larger FPGA, we can put two computation block one after another. This will increase the throughput by more than 2 times.
+
+\item Compact size: computation block contains few collections of layers though it is compact in size and can be accommodated small FPGA too. So computation block can be a general solution across different devices.
 
 \end{itemize}
 
 \subsection{Architecture}
-%Number equations consecutively. To make your 
-%equations more compact, you may use the solidus (~/~), the exp function, or 
-%appropriate exponents. Italicize Roman symbols for quantities and variables, 
-%but not Greek symbols. Use a long dash rather than a hyphen for a minus 
-%sign. Punctuate equations with commas or periods when they are part of a 
-%sentence, as in:
-%\begin{equation}
-%a+b=\gamma\label{eq}
-%\end{equation}
-%
-%Be sure that the 
-%symbols in your equation have been defined before or immediately following 
-%the equation. Use ``\eqref{eq}'', not ``Eq.~\eqref{eq}'' or ``equation \eqref{eq}'', except at 
-%the beginning of a sentence: ``Equation \eqref{eq} is . . .''
+\subsubsection{System architecture}
+Fig. ?? shows the overall architecture of our design. the host processor("ARM cortex 9") can access the memory through SDRAM controller. It will write all model parameters and input data in a shared memory space. Final output can be read from the shared memory space. There is an AXI bus between host and FPGA("config") to transfer configuration parameter, address spaces of data location from the host processor to FPGA. There is an interrupt signal from FPGA to denote the completed task. In hardware side, we have two AXI master connected to "input layer" block and "output layer" block, one is to read model parameters and another one is to read, write input and output feature map. "config" module set the configuration register of all other modules, such that each module know how to operate. It sends the addresses to "input layer" and "kernel controller" block, which denotes the location of data. "input layer" module read the input data from DDR memory and "kernel controller" module read the weights, bias. once "computation block" received configuration it knows which layers to enable, input dimension, number of kernels operation need to be done etc. then it sends the data to "output layer" module. Output layer writes the result in DDR memory in the allocated location. When execution of the whole iteration of computation block finishes, "output layer" send an interrupt to the host processor.
+
+
+\subsubsection{computation block}
+Figure ?? shows the architecture of the computation block and its interface with other blocks. A computation block consists of four different layers, including the two expand convolution (3x3 and 1x1), max pool layer, one squeeze layer (1x1 convolution) and an average pool layer. Expand layer has 4 parallel pipelines followed by an adder tree and RELU activation. We can enable max pool or average pool function by configuring computation block accordingly.
+
 
 \subsection{Implementation}
-\subsubsection{Functional flow}
-First we have to train the CNN model using TensorFlow or any framework. Its better to use SqueezeNet like models will achieve highest efficiency in our architecture. Then carefully select the floating point representation required for the trained model. Then convert trained weights and bias parameters to custom floating point values using provided APIs. This initial part can be done offshore in servers. Now converted parameters handed over to ARM processor in SoC FPGA. A host program also compiled and loaded in processor. Host program load the parameter in memory and send the address to FPGA, so it can access parameters. Then host program generates the configuration parameters required to execute particular CNN model and send it to configuration controller in FPGA. After initializing, it will start to load the input images into memory and pass the address to FPGA. 
-In FPGA, configuration controller reads configurations and distributes to all other modules (input layer, output layer, kernel loader, computation block). Eventually, it will set all the required configuration registers in these modules. configuration controller issue a "start" signal to all blocks. Now weights and input data are read from memory and feeded to kernel controller and input layer modules. They will rearrange the order as required by computation block. Then computation block process the data according to configurations. Output from computation block send to output layer module which will write the output to memory. Again in next iteration input are read from memory and configuration block is executed with another configuration. This loop continues until it reaches the final layer. After the final iteration, configuration controller generate a interrupt to host programme denoting that inference have completed. Now host program can access the output of inference and use it to perform higher level task. 
+%\subsubsection{Functional flow}
 
-%Please use ``soft'' (e.g., \verb|\eqref{Eq}|) cross references instead
-%of ``hard'' references (e.g., \verb|(1)|). That will make it possible
-%to combine sections, add equations, or change the order of figures or
-%citations without having to go through the file line by line.
-%
-%Please don't use the \verb|{eqnarray}| equation environment. Use
-%\verb|{align}| or \verb|{IEEEeqnarray}| instead. The \verb|{eqnarray}|
-%environment leaves unsightly spaces around relation symbols.
-%
-%Please note that the \verb|{subequations}| environment in {\LaTeX}
-%will increment the main equation counter even when there are no
-%equation numbers displayed. If you forget that, you might write an
-%article in which the equation numbers skip from (17) to (20), causing
-%the copy editors to wonder if you've discovered a new method of
-%counting.
-%
-%{\BibTeX} does not work by magic. It doesn't get the bibliographic
-%data from thin air but from .bib files. If you use {\BibTeX} to produce a
-%bibliography you must send the .bib files. 
-%
-%{\LaTeX} can't read your mind. If you assign the same label to a
-%subsubsection and a table, you might find that Table I has been cross
-%referenced as Table IV-B3. 
-%
-%{\LaTeX} does not have precognitive abilities. If you put a
-%\verb|\label| command before the command that updates the counter it's
-%supposed to be using, the label will pick up the last counter to be
-%cross referenced instead. In particular, a \verb|\label| command
-%should not go before the caption of a figure or a table.
-%
-%Do not use \verb|\nonumber| inside the \verb|{array}| environment. It
-%will not stop equation numbers inside \verb|{array}| (there won't be
-%any anyway) and it might stop a wanted equation number in the
-%surrounding equation.
+First, we have to train the CNN model using TensorFlow or any framework. It's better to use SqueezeNet like models will achieve the highest efficiency in our architecture. Then carefully select the floating point representation required for the trained model. Then convert trained weights and bias parameters to custom floating point values using provided APIs. This initial part can be done offshore in servers. Now converted parameters handed over to ARM processor in SoC FPGA. A host program also compiled and loaded in processor. Host program loads the parameter in memory and sends the address to FPGA, so it can access parameters. Then host program generates the configuration parameters required to execute a particular CNN model and send it to the "config" module in FPGA. After initializing, it will start to load the input images into memory and pass the address to FPGA. 
+In FPGA, the configuration controller reads configurations and distributes to all other modules ("input layer, an output layer, kernel loader, computation block"). Eventually, it will set all the required configuration registers in these modules. configuration controller issue a "start" signal to all blocks. Now weights and input data are read from memory and fed to kernel controller and input layer modules. They will rearrange the order as required by computation block. Then computation block processes the data according to configurations. The output from the computation block sends to output layer module which will write the output to memory. Again in next iteration input are read from memory and configuration block is executed with another configuration. This loop continues until it reaches the final layer. After the final iteration, the configuration controller generates an interrupt to host programme denoting that inference have completed. Now host program can access the output of inference and use it to perform the higher level task. Copying the next input image can be done parallelly while computation on the previous image by using an interrupt signal. So we can continuously execute inference like a real-time system without any delay for setting up input image.
 
-\subsection{Some Common Mistakes}\label{SCM}
-\begin{itemize}
-\item The word ``data'' is plural, not singular.
-\item The subscript for the permeability of vacuum $\mu_{0}$, and other common scientific constants, is zero with subscript formatting, not a lowercase letter ``o''.
-\item In American English, commas, semicolons, periods, question and exclamation marks are located within quotation marks only when a complete thought or name is cited, such as a title or full quotation. When quotation marks are used, instead of a bold or italic typeface, to highlight a word or phrase, punctuation should appear outside of the quotation marks. A parenthetical phrase or statement at the end of a sentence is punctuated outside of the closing parenthesis (like this). (A parenthetical sentence is punctuated within the parentheses.)
-\item A graph within a graph is an ``inset'', not an ``insert''. The word alternatively is preferred to the word ``alternately'' (unless you really mean something that alternates).
-\item Do not use the word ``essentially'' to mean ``approximately'' or ``effectively''.
-\item In your paper title, if the words ``that uses'' can accurately replace the word ``using'', capitalize the ``u''; if not, keep using lower-cased.
-\item Be aware of the different meanings of the homophones ``affect'' and ``effect'', ``complement'' and ``compliment'', ``discreet'' and ``discrete'', ``principal'' and ``principle''.
-\item Do not confuse ``imply'' and ``infer''.
-\item The prefix ``non'' is not a word; it should be joined to the word it modifies, usually without a hyphen.
-\item There is no period after the ``et'' in the Latin abbreviation ``et al.''.
-\item The abbreviation ``i.e.'' means ``that is'', and the abbreviation ``e.g.'' means ``for example''.
-\end{itemize}
-An excellent style manual for science writers is \cite{b7}.
 
-\subsection{Authors and Affiliations}
-\textbf{The class file is designed for, but not limited to, six authors.} A 
-minimum of one author is required for all conference articles. Author names 
-should be listed starting from left to right and then moving down to the 
-next line. This is the author sequence that will be used in future citations 
-and by indexing services. Names should not be listed in columns nor group by 
-affiliation. Please keep your affiliations as succinct as possible (for 
-example, do not differentiate among departments of the same organization).
+\subsection{Experimental results}\label{SCM}
 
-\subsection{Identify the Headings}
-Headings, or heads, are organizational devices that guide the reader through 
-your paper. There are two types: component heads and text heads.
 
-Component heads identify the different components of your paper and are not 
-topically subordinate to each other. Examples include Acknowledgments and 
-References and, for these, the correct style to use is ``Heading 5''. Use 
-``figure caption'' for your Figure captions, and ``table head'' for your 
-table title. Run-in heads, such as ``Abstract'', will require you to apply a 
-style (in this case, italic) in addition to the style provided by the drop 
-down menu to differentiate the head from the text.
+Experiments were conducted in DE 10 Nano board. We have used trained weights from ??? and converted them to 8-bit float and loaded the model. Using custom floating point number only reduced 2\% of the accuracy hence our architecture achieved around 70\% top 1 accuracy in Imagenet dataset. It took around 110ms for executing all computation blocks, hence our architecture achieved around 9FPS which is more than enough in most of the embedded vision application.
+Figure ?? show the measured performance of three different cases. 
 
-Text heads organize the topics on a relational, hierarchical basis. For 
-example, the paper title is the primary text head because all subsequent 
-material relates and elaborates on this one topic. If there are two or more 
-sub-topics, the next level head (uppercase Roman numerals) should be used 
-and, conversely, if there are not at least two sub-topics, then no subheads 
-should be introduced.
+Table??? Show the memory usage in each iteration of the computation block. Calculated average bandwidth for our architecture is around 142MB/s. It also shows that the final convolution layer which performs the classification requires the highest bandwidth
 
-\subsection{Figures and Tables}
-\paragraph{Positioning Figures and Tables} Place figures and tables at the top and 
-bottom of columns. Avoid placing them in the middle of columns. Large 
-figures and tables may span across both columns. Figure captions should be 
-below the figures; table heads should appear above the tables. Insert 
-figures and tables after they are cited in the text. Use the abbreviation 
-``Fig.~\ref{fig}'', even at the beginning of a sentence.
+Figure ?? show the final value for a sample image from 32 bit (TensorFlow) and from our design. We can see quantization error due to custom float representation. Still, the classification is correct. 
 
-\begin{table}[htbp]
-\caption{Table Type Styles}
-\begin{center}
-\begin{tabular}{|c|c|c|c|}
-\hline
-\textbf{Table}&\multicolumn{3}{|c|}{\textbf{Table Column Head}} \\
-\cline{2-4} 
-\textbf{Head} & \textbf{\textit{Table column subhead}}& \textbf{\textit{Subhead}}& \textbf{\textit{Subhead}} \\
-\hline
-copy& More table copy$^{\mathrm{a}}$& &  \\
-\hline
-\multicolumn{4}{l}{$^{\mathrm{a}}$Sample of a Table footnote.}
-\end{tabular}
-\label{tab1}
-\end{center}
-\end{table}
 
-%\begin{figure}[htbp]
-%\centerline{\includegraphics{fig1.png}}
-%\caption{Example of a figure caption.}
-%\label{fig}
-%\end{figure}
 
-Figure Labels: Use 8 point Times New Roman for Figure labels. Use words 
-rather than symbols or abbreviations when writing Figure axis labels to 
-avoid confusing the reader. As an example, write the quantity 
-``Magnetization'', or ``Magnetization, M'', not just ``M''. If including 
-units in the label, present them within parentheses. Do not label axes only 
-with units. In the example, write ``Magnetization (A/m)'' or ``Magnetization 
-\{A[m(1)]\}'', not just ``A/m''. Do not label axes with a ratio of 
-quantities and units. For example, write ``Temperature (K)'', not 
-``Temperature/K''.
+\subsection{Discussion}
+In our study we quantize pretrained network to 8 bit floating numbers, which may affect the accuracy due to quantization error. Improvement can be done by retraining the model starting from pretrained quantized parameters. By retraining model will adjust to quantization error and adapts to custom number system, this may improve the accuracy.
 
 \section*{Acknowledgment}
-
-The preferred spelling of the word ``acknowledgment'' in America is without 
-an ``e'' after the ``g''. Avoid the stilted expression ``one of us (R. B. 
-G.) thanks $\ldots$''. Instead, try ``R. B. G. thanks$\ldots$''. Put sponsor 
-acknowledgments in the unnumbered footnote on the first page.
+The authors would like to thank InnovateFPGA community for valueable feedback.
 
 \section*{References}
 
