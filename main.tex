@@ -79,7 +79,7 @@ Hardware resources(ALM, register), on-chip memory or BRAM, bandwidth to access e
 
 \subsection{Strategy I: Custom floating point number
 }\label{AA}
-Most of CNN inference is implemented in 32-bit float numbers. For some application 32 bit precision is too much and we can save resource and power by using a low bit with representations. we use two type of floating point representation, 12-bit representation is for computation and 8-bit representation for storing input, parameters and intermediate results. The The The 8-bit representation used 5-bit exponent and 2-bit mantissa and 12-bit use 5-bit exponent and 6-bit mantissa. This floating point representation is chosen by an empirical study on SqueezeNet model with a different format. We only sacrifice 2\% of accuracy which gives top 1 accuracy of 55\% and top-5 accuracy of 78\%. on ImageNet dataset, enough for most of the embedded vision applications. We also can easily adapt any floating format according to the model’s requirement and resource availability. Using 8 bit for model parameter save 75\% of memory required for model parameters. Using 12-bit operation reduce around 5x hardware resources compared to 32-bit operation
+Most of CNN inference is implemented in 32-bit float numbers. For some application 32 bit precision is too much and we can save resource and power by using a low bit with representations. we use two type of floating point representation, 12-bit representation is for computation and 8-bit representation for storing input, parameters and intermediate results. The 8-bit representation used 5-bit exponent and 2-bit mantissa and 12-bit use 5-bit exponent and 6-bit mantissa. This floating point representation is chosen by an empirical study on SqueezeNet model with a different format. We only sacrifice 2\% of accuracy which gives top 1 accuracy of 55\% and top-5 accuracy of 78\%. on ImageNet dataset, enough for most of the embedded vision applications. We also can easily adapt any floating format according to the model’s requirement and resource availability. Using 8 bit for model parameter save 75\% of memory required for model parameters. Using 12-bit operation reduce around 5x hardware resources compared to 32-bit operation
 
 
 \begin{table}[htbp]
@@ -191,7 +191,7 @@ Fig.~\ref{cmp} shows the architecture of the computation block and its interface
 \section{Implementation}
 %\subsubsection{Functional flow}
 
-First, we have to train the CNN model using TensorFlow or any framework. It's better to use SqueezeNet like models will achieve the highest efficiency in our architecture. Then carefully select the floating point representation required for the trained model. Then convert trained weights and bias parameters to custom floating point values using provided APIs. This initial part can be done offshore in servers. Now converted parameters handed over to ARM processor in SoC FPGA. A host program also compiled and loaded in processor. Host program loads the parameter in memory and sends the address to FPGA, so it can access parameters. Then host program generates the configuration parameters required to execute a particular CNN model and send it to the \textit{config} module in FPGA. After initializing, it will start to load the input images into memory and pass the address to FPGA. 
+First, we have to train the CNN model using TensorFlow or any framework. It's better to use SqueezeNet like models will achieve the highest efficiency in our architecture. Then select appropriate floating point representation required for the trained model by empirical experiment. Then convert trained weights and bias parameters to custom floating point values using provided APIs. This initial part can be done offshore in servers. Now converted parameters handed over to ARM processor in SoC FPGA. A host program also compiled and loaded in processor. Host program loads the parameter in memory and sends the address to FPGA, so it can access parameters. Then host program generates the configuration parameters required to execute a particular CNN model and send it to the \textit{config} module in FPGA. After initializing, it will start to load the input images into memory and pass the address to FPGA. 
 In FPGA, the configuration controller reads configurations and distributes to all other modules (\textit{input layer, an output layer, kernel loader, computation block}). Eventually, it will set all the required configuration registers in these modules. configuration controller issue a \textit{start} signal to all blocks. Now weights and input data are read from memory and fed to kernel controller and input layer modules. They will rearrange the order as required by computation block. Then computation block processes the data according to configurations. The output from the computation block sends to output layer module which will write the output to memory. Again in next iteration input are read from memory and configuration block is executed with another configuration. This loop continues until it reaches the final layer. After the final iteration, the configuration controller generates an interrupt to host programme denoting that inference have completed. Now host program can access the output of inference and use it to perform the higher level task. Copying the next input image can be done parallelly while computation on the previous image by using an interrupt signal. So we can continuously execute inference like a real-time system without any delay for setting up input image.
 
 
@@ -246,18 +246,18 @@ No    & Input KB    & Weights KB    & Output KB   & Total KB \\ \hline
 
 Table.\ref{tab3} Show the memory usage in each iteration of the computation block. Calculated average bandwidth for our architecture is around 142MB/s. It also shows that the final convolution layer which performs the classification requires the highest bandwidth
 
-
+% \epsfig{file=plot.eps,width=1\linewidth}
 
 \begin{figure} 
-    \centering
-  % \subfloat[]{%
-  %      \includegraphics[width=0.28\linewidth,valign=c]{image.jpg}}
-  %   \label{1a}
-  \subfloat[]{%
-        \includegraphics[width=1\linewidth,valign=c]{graph1.jpg}}
-    \label{1b}
-  \caption{comparision of class score from our design and 32-bit implementation for a sample image}
-  \label{fig1} 
+   \centering
+ % \subfloat[]{%
+ %      \includegraphics[width=0.28\linewidth,valign=c]{image.jpg}}
+ %   \label{1a}
+ \subfloat[]{%
+       \includegraphics[width=1\linewidth,valign=c]{plot.eps}}
+   \label{1b}
+ \caption{comparision of class score from our design and 32-bit implementation for a sample image}
+ \label{fig1} 
 \end{figure}
 
 
