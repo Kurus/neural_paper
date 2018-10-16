@@ -26,24 +26,47 @@
 }
 
 \author{
-\IEEEauthorblockN{Kathirgamaraja Pradeep}
-\IEEEauthorblockA{\textit{University of Moratuwa} \\
-deep0kathir@gmail.com}
-\and
-\IEEEauthorblockN{Kamalakkannan Kamalavasan}
-\IEEEauthorblockA{\textit{University of Moratuwa} \\
-kkvasan@live.com}
-\and
-\IEEEauthorblockN{Ratnasegar Natheesan}
-\IEEEauthorblockA{\textit{University of Moratuwa} \\
-rnatheesan@gmail.com}
+
+\IEEEauthorblockN{Kathirgamaraja Pradeep\IEEEauthorrefmark{1},
+Kamalakkannan Kamalavasan\IEEEauthorrefmark{2}, Ratnasegar Natheesan\IEEEauthorrefmark{3} and
+Ajith Pasqual\IEEEauthorrefmark{4}}
+\IEEEauthorblockA{Dept. of Electronic and Telecomunication Engineering,
+University of Moratuwa\\
+Sri Lanka\\
+Email: \IEEEauthorrefmark{1}deep0kathir@gmail.com,
+\IEEEauthorrefmark{2}kkvasan@live.com,
+\IEEEauthorrefmark{3}rnatheesan@gmail.com,
+\IEEEauthorrefmark{4}pasqual@ent.mrt.ac.lk}
 
 }
+
+
+% \author{
+
+% \IEEEauthorblockN{Kathirgamaraja Pradeep}
+% \IEEEauthorblockA{\textit{University of Moratuwa} \\
+% deep0kathir@gmail.com}
+% \and
+% \IEEEauthorblockN{Kamalakkannan Kamalavasan}
+% \IEEEauthorblockA{\textit{University of Moratuwa} \\
+% kkvasan@live.com}
+% \and
+% \IEEEauthorblockN{Ratnasegar Natheesan}
+% \IEEEauthorblockA{\textit{University of Moratuwa} \\
+% rnatheesan@gmail.com}
+% \and
+% \IEEEauthorblockN{Ajith Pasqual}
+% \IEEEauthorblockA{\textit{Dept. of Electronic and Telecomunication Engineering} \\
+% \textit{University of Moratuwa}\\
+% Sri Lanka \\
+% pasqual@ent.mrt.ac.lk}
+
+% }
 
 \maketitle
 
 \begin{abstract}
-In recent years, Convolution Neural Network (CNN) gained great success in many application, especially in computer vision. Now adapting CNN inference on edge device has become the active research in embedded vision and hot topic in Edge AI. The major design hurdles for implementing CNN inference on embedded systems are limited computation resource, memory resource, and power budget. In this study, we are presenting a novel architecture for SqueezeNet\cite{squeezenet} like CNN models and this can be extended to support any CNN model as well. We address two approaches to mitigate resource constraints. First, we use a custom floating point(12 bit for computation and 8bit for storing). Second is slicing the model into repetitives block called computation blocks. Computation block can be configured dynamically by the host processor to operate in a different mode. We have implemented SqueezeNet v1.1 for Image-Net\cite{imagenet} for large-scale classification which achieved around 9 FPS at 100MHz. Accuracy loss due to using custom float is measured to be less than 2\%. Unlike other implementations which use FPGA boards with a large amount of resources, our experiments are done in DE10 Nano, this mimics actual embedded system like environment.
+In recent years, Convolution Neural Network (CNN) gained great success in many application, especially in computer vision. Now adapting CNN inference on edge device has become the active research in embedded vision and hot topic in Edge AI. The major design hurdles for implementing CNN inference on embedded systems are limited computation resource, memory resource, and power budget. In this study, we are presenting a novel architecture for SqueezeNet\cite{squeezenet} like CNN models and this can be extended to support any CNN model as well. We address two approaches to mitigate resource constraints. First, we use a custom floating point(12 bit for computation and 8bit for storing). Second is slicing the model into repetitives block called computation blocks. Computation block can be configured dynamically by the host processor to operate in a different mode. We have implemented SqueezeNet v1.1 for Image-Net\cite{imagenet} for large-scale classification which achieved around 9 FPS at 100MHz. Accuracy loss due to using custom float is measured to be less than 6\%. Unlike other implementations which use FPGA boards with a large amount of resources, our experiments are done in DE10 Nano, this mimics actual embedded system like environment.
 
 \end{abstract}
 
@@ -61,7 +84,7 @@ In this paper, we analyze the factors which need to be considered when we deploy
 \item
 We present that using low bit floating representation can drastically reduce the resource requirements while sacrifice a little accuracy compare to 32-bit floating representation.
 \item 
-We propose a block architecture to accelerate CNN inference on embedded FPGA. It can be configured dynamically to support CNN models. SqueezeNet for ImageNet dataset is tested, which achieved 9FPS and around 55\% top-1 accuracy on a DE-10 board at 100MHz while only consuming 2W power.
+We propose a block architecture to accelerate CNN inference on embedded FPGA. It can be configured dynamically to support CNN models. SqueezeNet for ImageNet dataset is tested, which achieved 9FPS and around 51\% top-1 accuracy on a DE-10 board at 100MHz while only consuming 2W power.
 \end{itemize}
 Rest of the paper is organized as follows. In Section 2 we provide a background on CNN, Squeezenet and review related works. Then, in Sections 3 we describe the design strategies used in our system. Section 4 explains the architecture of the overall system. After that, in section 5 and 6 we turn our attention to implementations and experiments conducted.  Finally, we compare our result and conclude in Section 7 and 8.
 
@@ -79,7 +102,7 @@ Hardware resources(ALM, register), on-chip memory or BRAM, bandwidth to access e
 
 \subsection{Strategy I: Custom floating point number
 }\label{AA}
-Most of CNN inference is implemented in 32-bit float numbers. For some application 32 bit precision is too much and we can save resource and power by using a low bit with representations. we use two type of floating point representation, 12-bit representation is for computation and 8-bit representation for storing input, parameters and intermediate results. The 8-bit representation used 5-bit exponent and 2-bit mantissa and 12-bit use 5-bit exponent and 6-bit mantissa. This floating point representation is chosen by an empirical study on SqueezeNet model with a different format. We only sacrifice 2\% of accuracy which gives top 1 accuracy of 55\% and top-5 accuracy of 78\%. on ImageNet dataset, enough for most of the embedded vision applications. We also can easily adapt any floating format according to the model’s requirement and resource availability. Using 8 bit for model parameter save 75\% of memory required for model parameters. Using 12-bit operation reduce around 5x hardware resources compared to 32-bit operation
+Most of CNN inference is implemented in 32-bit float numbers. For some application 32 bit precision is too much and we can save resource and power by using a low bit with representations. we use two type of floating point representation, 12-bit representation is for computation and 8-bit representation for storing input, parameters and intermediate results. The 8-bit representation used 5-bit exponent and 2-bit mantissa and 12-bit use 5-bit exponent and 6-bit mantissa. This floating point representation is chosen by an empirical study on SqueezeNet model with a different format. We only sacrifice 6\% of accuracy which gives top 1 accuracy of 51\% and top-5 accuracy of 74\%. on ImageNet dataset, enough for most of the embedded vision applications. We also can easily adapt any floating format according to the model’s requirement and resource availability. Using 8 bit for model parameter save 75\% of memory required for model parameters. Using 12-bit operation reduce around 5x hardware resources compared to 32-bit operation
 
 
 \begin{table}[htbp]
@@ -107,7 +130,7 @@ Using 32-bit floating operation are not affordable in embedded systems. Studies 
 
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=0.35\textwidth]{squz.jpg}}
+\centerline{\includegraphics[width=0.35\textwidth]{squz.pdf}}
 \caption{SqueezeNet sliced into computation block}
 \label{sqz}
 \end{figure}
@@ -132,7 +155,7 @@ Computation block is the key feature in our design. It is a collection of layers
 \subsubsection{System architecture}
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=0.36\textwidth]{archiecture.jpg}}
+\centerline{\includegraphics[width=0.36\textwidth]{archiecture.pdf}}
 \caption{System architecture}
 \label{arch}
 \end{figure}
@@ -143,7 +166,7 @@ Fig.~\ref{arch} shows the overall architecture of our design. the host processor
 \subsubsection{computation block}
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=0.4\textwidth]{computation.jpg}}
+\centerline{\includegraphics[width=0.4\textwidth]{computation.pdf}}
 \caption{computation block architecture}
 \label{cmp}
 \end{figure}
@@ -198,7 +221,7 @@ In FPGA, the configuration controller reads configurations and distributes to al
 \section{Experimental results}\label{SCM}
 
 
-Experiments were conducted in DE 10 Nano board. We have used trained weights from \cite{weight} and converted them to 8-bit float and loaded the model. Using custom floating point number only reduced 2\% of the accuracy hence our architecture achieved around 55\% top 1 accuracy in Imagenet dataset. It took around 110ms for executing all computation blocks, hence our architecture achieved around 9FPS which is more than enough in most of the embedded vision application.
+Experiments were conducted in DE 10 Nano board. We have used trained weights from \cite{weight} and converted them to 8-bit float and loaded the model. Using custom floating point number only reduced 6\% of the accuracy hence our architecture achieved around 51\% top 1 accuracy in Imagenet dataset. It took around 110ms for executing all computation blocks, hence our architecture achieved around 9FPS which is more than enough in most of the embedded vision application.
 
 Table.~\ref{tab2} show the measured performance of three different cases. Expand convolutions and squeeze convolution execute simultaniously. In first two case expand decided the execution time of computation block in the last case squeeze decide the execution time. Case I,II show that enabling maxpool (for average pool too) will not affect the execution time.
 
