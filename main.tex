@@ -34,7 +34,7 @@ Ajith Pasqual\IEEEauthorrefmark{4}}
 University of Moratuwa\\
 Sri Lanka\\
 Email: \IEEEauthorrefmark{1}deep0kathir@gmail.com,
-\IEEEauthorrefmark{2}kkvasan@live.com,
+\IEEEauthorrefmark{2}kamalavasan@paraqum.com,
 \IEEEauthorrefmark{3}rnatheesan@gmail.com,
 \IEEEauthorrefmark{4}pasqual@ent.mrt.ac.lk}
 
@@ -66,7 +66,7 @@ Email: \IEEEauthorrefmark{1}deep0kathir@gmail.com,
 \maketitle
 
 \begin{abstract}
-In recent years, Convolution Neural Network (CNN) gained great success in many application, especially in computer vision. Now adapting CNN inference on edge device has become the active research in embedded vision and hot topic in Edge AI. The major design hurdles for implementing CNN inference on embedded systems are limited computation resource, memory resource, and power budget. In this study, we are presenting a novel architecture for SqueezeNet\cite{squeezenet} like CNN models and this can be extended to support any CNN model as well. We address two approaches to mitigate resource constraints. First, we use a custom floating point(12 bit for computation and 8bit for storing). Second is slicing the model into repetitives block called computation blocks. Computation block can be configured dynamically by the host processor to operate in a different mode. We have implemented SqueezeNet v1.1 for Image-Net\cite{imagenet} for large-scale classification which achieved around 9 FPS at 100MHz. Accuracy loss due to using custom float is measured to be less than 6\%. Unlike other implementations which use FPGA boards with a large amount of resources, our experiments are done in DE10 Nano, this mimics actual embedded system like environment.
+In recent years, Convolution Neural Network (CNN) gained great success in many application, especially in computer vision. Now adapting CNN inference on edge device has become the active research in embedded vision and hot topic in Edge AI. The major design hurdles for implementing CNN inference on embedded systems are limited computation resource, memory resource, and power budget. In this study, we are presenting a novel architecture for SqueezeNet\cite{squeezenet} like CNN models and this can be extended to support any CNN model as well. We address two approaches to mitigate resource constraints. First, we use a custom floating point(12 bit for computation and 8bit for storing). Second is slicing the model into repetitives block called computation blocks. Computation block can be configured dynamically by the host processor to operate in a different mode. We have implemented SqueezeNet v1.1 for Image-Net\cite{imagenet} for large-scale classification which achieved around 9 FPS at 100MHz. SqueezeNet, mapped for our architecture achieves top-1 accuracy of 51\% for the ImageNet dataset. Unlike other implementations which use FPGA boards with a large amount of resources, our experiments are done in DE10 Nano, this mimics actual embedded system like environment.
 
 \end{abstract}
 
